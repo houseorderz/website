@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/useAuth.js'
 import { Container } from './Container.jsx'
 
 const primaryLinks = [
@@ -49,6 +50,8 @@ function IconButton({ label, children }) {
 }
 
 export default function Navbar() {
+  const navigate = useNavigate()
+  const { isAuthenticated, user, logout } = useAuth()
   const [open, setOpen] = useState(false)
   const [pagesOpen, setPagesOpen] = useState(false)
 
@@ -74,18 +77,38 @@ export default function Navbar() {
 
           <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
             <div className="flex items-center gap-2">
-              <NavLink
-                to="/register"
-                className="rounded-sm border border-white/50 px-2 py-0.5 font-semibold text-white/95 hover:bg-white/10"
-              >
-                Sign up
-              </NavLink>
-              <NavLink
-                to="/login"
-                className="rounded-sm border border-white/50 px-2 py-0.5 font-semibold text-white/95 hover:bg-white/10"
-              >
-                Sign in
-              </NavLink>
+              {isAuthenticated ? (
+                <>
+                  <span className="hidden max-w-[140px] truncate text-white/90 sm:inline">
+                    Hi, {user?.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout()
+                      navigate('/')
+                    }}
+                    className="rounded-sm border border-white/50 px-2 py-0.5 font-semibold text-white/95 hover:bg-white/10"
+                  >
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <NavLink
+                    to="/register"
+                    className="rounded-sm border border-white/50 px-2 py-0.5 font-semibold text-white/95 hover:bg-white/10"
+                  >
+                    Sign up
+                  </NavLink>
+                  <NavLink
+                    to="/login"
+                    className="rounded-sm border border-white/50 px-2 py-0.5 font-semibold text-white/95 hover:bg-white/10"
+                  >
+                    Sign in
+                  </NavLink>
+                </>
+              )}
             </div>
 
             <div className="hidden items-center gap-3 sm:flex">
