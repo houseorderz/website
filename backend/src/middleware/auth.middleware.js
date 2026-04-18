@@ -16,7 +16,7 @@ export async function requireAuth(req, res, next) {
     }
 
     const result = await pool.query(
-      `SELECT id, name, email, created_at FROM app_users WHERE id = $1`,
+      `SELECT id, name, email, role, created_at FROM app_users WHERE id = $1`,
       [payload.sub],
     )
 
@@ -29,10 +29,21 @@ export async function requireAuth(req, res, next) {
       id: row.id,
       name: row.name,
       email: row.email,
+      role: row.role || 'client',
       createdAt: row.created_at,
     }
     next()
   } catch (err) {
     next(err)
   }
+}
+
+export function requireAdmin(req, res, next) {
+  if (!req.user) {
+    return next(new HttpError(401, 'Not authenticated'))
+  }
+  if (req.user.role !== 'admin') {
+    return next(new HttpError(403, 'Admin access required'))
+  }
+  next()
 }

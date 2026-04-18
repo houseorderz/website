@@ -29,6 +29,25 @@ const server = app.listen(port, () => {
   console.log(`API http://localhost:${port}`)
 })
 
+const SIX_HOURS_MS = 6 * 60 * 60 * 1000
+;(async () => {
+  const { purgeExpiredSoftDeletes } = await import('./services/products.service.js')
+  async function runPurge() {
+    try {
+      const n = await purgeExpiredSoftDeletes()
+      if (n > 0) {
+        console.log(
+          `Purged ${n} soft-deleted product(s) past the retention period.`,
+        )
+      }
+    } catch (err) {
+      console.error('purgeExpiredSoftDeletes failed:', err)
+    }
+  }
+  await runPurge()
+  setInterval(runPurge, SIX_HOURS_MS)
+})()
+
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(

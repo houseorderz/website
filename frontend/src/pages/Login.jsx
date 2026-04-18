@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import PasswordInput from '../components/PasswordInput.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { apiJson, ApiError } from '../lib/api.js'
 
@@ -20,8 +21,11 @@ export default function Login() {
         method: 'POST',
         body: { email, password },
       })
-      setSession(data.token, data.user)
-      navigate('/', { replace: true })
+      const user = { ...data.user, role: data.user.role || 'client' }
+      setSession(data.token, user)
+      const next =
+        user.role === 'admin' ? '/admin/overview' : '/client/overview'
+      navigate(next, { replace: true })
     } catch (err) {
       const message =
         err instanceof ApiError ? err.message : 'Something went wrong'
@@ -84,25 +88,16 @@ export default function Login() {
           />
         </div>
 
-        <div>
-          <label
-            className="text-xs font-semibold text-zinc-700"
-            htmlFor="login-password"
-          >
-            Password
-          </label>
-          <input
-            id="login-password"
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-orange-300 focus:ring-2 focus:ring-orange-500/10"
-            placeholder="••••••••"
-          />
-        </div>
+        <PasswordInput
+          id="login-password"
+          label="Password"
+          name="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+        />
 
         <div className="flex items-center justify-between text-sm">
           <button

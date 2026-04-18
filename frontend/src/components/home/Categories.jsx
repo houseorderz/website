@@ -66,7 +66,7 @@ export default function Categories() {
                 {c.name}
               </div>
               <div className="text-[11px] text-zinc-500">
-                ({c.itemCount})
+                ({c.productCount ?? c.itemCount ?? 0})
               </div>
             </button>
           ))}

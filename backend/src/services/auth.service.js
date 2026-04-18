@@ -49,9 +49,9 @@ export async function registerUser({ name, email, password }) {
   let result
   try {
     result = await pool.query(
-      `INSERT INTO app_users (name, email, password_hash)
-       VALUES ($1, $2, $3)
-       RETURNING id, name, email, created_at`,
+      `INSERT INTO app_users (name, email, password_hash, role)
+       VALUES ($1, $2, $3, 'client')
+       RETURNING id, name, email, role, created_at`,
       [n, e, passwordHash],
     )
   } catch (err) {
@@ -62,13 +62,18 @@ export async function registerUser({ name, email, password }) {
   }
 
   const user = result.rows[0]
-  const token = signAuthToken({ sub: user.id, email: user.email })
+  const token = signAuthToken({
+    sub: user.id,
+    email: user.email,
+    role: user.role,
+  })
 
   return {
     user: {
       id: user.id,
       name: user.name,
       email: user.email,
+      role: user.role,
       createdAt: user.created_at,
     },
     token,
@@ -83,7 +88,7 @@ export async function loginUser({ email, password }) {
   const p = String(password)
 
   const result = await pool.query(
-    `SELECT id, name, email, password_hash, created_at
+    `SELECT id, name, email, password_hash, role, created_at
      FROM app_users
      WHERE LOWER(email) = $1`,
     [e],
@@ -99,15 +104,84 @@ export async function loginUser({ email, password }) {
     throw new HttpError(401, 'Invalid email or password')
   }
 
-  const token = signAuthToken({ sub: row.id, email: row.email })
+  const role = row.role || 'client'
+  const token = signAuthToken({ sub: row.id, email: row.email, role })
 
   return {
     user: {
       id: row.id,
       name: row.name,
       email: row.email,
+      role,
       createdAt: row.created_at,
     },
     token,
   }
+}
+
+function mapUserRow(row) {
+  if (!row) return null
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    role: row.role || 'client',
+    createdAt: row.created_at,
+  }
+}
+
+export async function updateProfile(userId, { name, currentPassword, newPassword }) {
+  const wantsPassword =
+    newPassword != null && String(newPassword).trim().length > 0
+  const wantsName = name !== undefined && name !== null
+
+  if (!wantsPassword && !wantsName) {
+    throw new HttpError(400, 'Nothing to update')
+  }
+
+  if (wantsPassword) {
+    const nextPwd = validatePassword(newPassword)
+    if (!currentPassword || String(currentPassword).length === 0) {
+      throw new HttpError(
+        400,
+        'Current password is required to set a new password',
+      )
+    }
+    const pwdRes = await pool.query(
+      `SELECT password_hash FROM app_users WHERE id = $1`,
+      [userId],
+    )
+    const row = pwdRes.rows[0]
+    if (!row) {
+      throw new HttpError(404, 'User not found')
+    }
+    const ok = await bcrypt.compare(String(currentPassword), row.password_hash)
+    if (!ok) {
+      throw new HttpError(401, 'Current password is incorrect')
+    }
+    const passwordHash = await bcrypt.hash(nextPwd, SALT_ROUNDS)
+    await pool.query(
+      `UPDATE app_users SET password_hash = $2 WHERE id = $1`,
+      [userId, passwordHash],
+    )
+  }
+
+  if (wantsName) {
+    const n = validateName(name)
+    await pool.query(`UPDATE app_users SET name = $2 WHERE id = $1`, [
+      userId,
+      n,
+    ])
+  }
+
+  const result = await pool.query(
+    `SELECT id, name, email, role, created_at FROM app_users WHERE id = $1`,
+    [userId],
+  )
+  const updated = result.rows[0]
+  if (!updated) {
+    throw new HttpError(404, 'User not found')
+  }
+
+  return { user: mapUserRow(updated) }
 }

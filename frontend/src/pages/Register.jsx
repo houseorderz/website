@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import PasswordInput from '../components/PasswordInput.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { apiJson, ApiError } from '../lib/api.js'
 
@@ -21,8 +22,9 @@ export default function Register() {
         method: 'POST',
         body: { name, email, password },
       })
-      setSession(data.token, data.user)
-      navigate('/', { replace: true })
+      const user = { ...data.user, role: data.user.role || 'client' }
+      setSession(data.token, user)
+      navigate('/client/overview', { replace: true })
     } catch (err) {
       const message =
         err instanceof ApiError ? err.message : 'Something went wrong'
@@ -102,26 +104,17 @@ export default function Register() {
             placeholder="you@example.com"
           />
         </div>
-        <div>
-          <label
-            className="text-xs font-semibold text-zinc-700"
-            htmlFor="register-password"
-          >
-            Password
-          </label>
-          <input
-            id="register-password"
-            type="password"
-            name="password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-orange-300 focus:ring-2 focus:ring-orange-500/10"
-            placeholder="At least 8 characters"
-          />
-        </div>
+        <PasswordInput
+          id="register-password"
+          label="Password"
+          name="password"
+          autoComplete="new-password"
+          required
+          minLength={8}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="At least 8 characters"
+        />
         <button
           type="submit"
           disabled={loading}

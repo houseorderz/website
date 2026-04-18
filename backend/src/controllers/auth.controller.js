@@ -34,3 +34,20 @@ export async function getMe(req, res, next) {
     next(err)
   }
 }
+
+export async function patchMe(req, res, next) {
+  try {
+    if (!req.user) {
+      throw new HttpError(401, 'Not authenticated')
+    }
+    const { name, currentPassword, newPassword } = req.body || {}
+    const data = await authService.updateProfile(req.user.id, {
+      name,
+      currentPassword,
+      newPassword,
+    })
+    res.json(data)
+  } catch (err) {
+    next(err)
+  }
+}

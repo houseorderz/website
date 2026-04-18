@@ -7,5 +7,6 @@ const router = Router()
 router.post('/register', authController.postRegister)
 router.post('/login', authController.postLogin)
 router.get('/me', requireAuth, authController.getMe)
+router.patch('/me', requireAuth, authController.patchMe)
 
 export default router

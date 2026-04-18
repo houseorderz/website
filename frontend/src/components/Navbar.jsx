@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
+import { useCart } from '../context/useCart.js'
+import { useWishlist } from '../context/useWishlist.js'
 import { Container } from './Container.jsx'
+import ProfileMenu from './ProfileMenu.jsx'
 
 const primaryLinks = [
   { to: '/', label: 'Home', end: true },
@@ -37,15 +40,82 @@ function NavItem({ to, label, end, onNavigate }) {
   )
 }
 
-function IconButton({ label, children }) {
+function CartIcon({ className = 'h-[18px] w-[18px]' }) {
   return (
-    <button
-      type="button"
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/30"
-      aria-label={label}
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
     >
-      {children}
-    </button>
+      <path d="M6 6h15l-1.5 9h-13z" />
+      <path d="M6 6l-2-2H2" />
+      <circle cx="9" cy="20" r="1" />
+      <circle cx="18" cy="20" r="1" />
+    </svg>
+  )
+}
+
+function WishlistNavLink({ onNavigate }) {
+  const { count } = useWishlist()
+  return (
+    <NavLink
+      to="/client/wishlist"
+      onClick={() => onNavigate?.()}
+      className={({ isActive }) =>
+        [
+          'relative inline-flex items-center gap-1.5 rounded-full px-2 py-2 text-xs font-semibold transition md:px-3',
+          isActive ? 'text-blue-700' : 'text-blue-600 hover:text-blue-700',
+        ].join(' ')
+      }
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
+      </svg>
+      <span className="hidden sm:inline">Wishlist</span>
+      {count > 0 ? (
+        <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold leading-none text-white sm:static sm:ms-0 sm:h-5 sm:min-w-5 sm:text-[11px]">
+          {count > 99 ? '99+' : count}
+        </span>
+      ) : null}
+    </NavLink>
+  )
+}
+
+function CartNavLink({ onNavigate }) {
+  const { itemCount } = useCart()
+  return (
+    <NavLink
+      to="/cart"
+      onClick={() => onNavigate?.()}
+      className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/30"
+      aria-label={
+        itemCount > 0
+          ? `Shopping cart, ${itemCount} items`
+          : 'Shopping cart'
+      }
+    >
+      <CartIcon />
+      {itemCount > 0 ? (
+        <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold leading-none text-white">
+          {itemCount > 99 ? '99+' : itemCount}
+        </span>
+      ) : null}
+    </NavLink>
   )
 }
 
@@ -192,29 +262,6 @@ export default function Navbar() {
           ))}
 
           <div className="relative">
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 px-1 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-600 transition hover:text-zinc-900"
-              aria-haspopup="menu"
-              aria-expanded={pagesOpen}
-              onClick={() => setPagesOpen((v) => !v)}
-            >
-              Pages
-              <svg
-                viewBox="0 0 20 20"
-                width="14"
-                height="14"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.24 4.5a.75.75 0 0 1-1.08 0l-4.24-4.5a.75.75 0 0 1 .02-1.06Z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-
             {pagesOpen ? (
               <div
                 role="menu"
@@ -247,59 +294,31 @@ export default function Navbar() {
             <NavItem key={l.to} {...l} />
           ))}
 
-       
+          <span
+            className="hidden h-4 w-px shrink-0 bg-zinc-200 md:block"
+            aria-hidden="true"
+          />
+          <div className="hidden md:flex">
+            <WishlistNavLink />
+          </div>
+          <span
+            className="hidden h-4 w-px shrink-0 bg-zinc-200 md:block"
+            aria-hidden="true"
+          />
         </nav>
 
-        <div className="hidden items-center gap-1 md:flex">
-          <IconButton label="Search">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+        <div className="hidden items-center gap-2 md:flex">
+          <CartNavLink />
+          {isAuthenticated ? (
+            <ProfileMenu user={user} />
+          ) : (
+            <NavLink
+              to="/register"
+              className="inline-flex items-center justify-center rounded-full bg-zinc-900 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
             >
-              <circle cx="11" cy="11" r="7" />
-              <path d="M21 21l-4.3-4.3" />
-            </svg>
-          </IconButton>
-          <IconButton label="Wishlist">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
-            </svg>
-          </IconButton>
-          <IconButton label="Cart">
-            <svg
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M6 6h15l-1.5 9h-13z" />
-              <path d="M6 6l-2-2H2" />
-              <circle cx="9" cy="20" r="1" />
-              <circle cx="18" cy="20" r="1" />
-            </svg>
-          </IconButton>
+              Get Started
+            </NavLink>
+          )}
         </div>
 
         <button
@@ -384,56 +403,21 @@ export default function Navbar() {
                 </div>
               </div>
 
-              <div className="mt-2 flex items-center gap-2 px-1">
-                <IconButton label="Search">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
+              <div className="mt-2 flex flex-wrap items-center gap-2 px-1">
+                <WishlistNavLink onNavigate={() => setOpen(false)} />
+                <span className="h-6 w-px bg-zinc-200" aria-hidden="true" />
+                <CartNavLink onNavigate={() => setOpen(false)} />
+                {isAuthenticated ? (
+                  <ProfileMenu user={user} />
+                ) : (
+                  <NavLink
+                    to="/register"
+                    onClick={() => setOpen(false)}
+                    className="flex flex-1 min-w-[140px] items-center justify-center rounded-full bg-zinc-900 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-zinc-800"
                   >
-                    <circle cx="11" cy="11" r="7" />
-                    <path d="M21 21l-4.3-4.3" />
-                  </svg>
-                </IconButton>
-                <IconButton label="Wishlist">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
-                  </svg>
-                </IconButton>
-                <IconButton label="Cart">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M6 6h15l-1.5 9h-13z" />
-                    <path d="M6 6l-2-2H2" />
-                    <circle cx="9" cy="20" r="1" />
-                    <circle cx="18" cy="20" r="1" />
-                  </svg>
-                </IconButton>
+                    Get Started
+                  </NavLink>
+                )}
               </div>
             </div>
           </Container>
